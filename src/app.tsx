@@ -1,10 +1,9 @@
-import "./index.css";
-
 import { useState } from "react";
 
 export default function App() {
     const [count, setCount] = useState(0);
 
+    // for testing purposes
     return (
         <main className="flex flex-col gap-4">
             <p className="text-black text-center">{count}</p>
