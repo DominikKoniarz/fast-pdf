@@ -141,6 +141,7 @@ vite.config.ts.timestamp-*
 .vite/
 
 # Electron
+dist-electron
 dist
 
 # notes
