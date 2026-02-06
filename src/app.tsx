@@ -1,19 +1,16 @@
-import { useState } from "react";
+import { createRouter, RouterProvider } from "@tanstack/react-router";
+import { routeTree } from "./routeTree.gen";
+
+const router = createRouter({
+    routeTree,
+});
+
+declare module "@tanstack/react-router" {
+    interface Register {
+        router: typeof router;
+    }
+}
 
 export default function App() {
-    const [count, setCount] = useState(0);
-
-    // for testing purposes
-    return (
-        <main className="flex flex-col gap-4">
-            <p className="text-black text-center">{count}</p>
-            <button onClick={() => setCount(0)}>Reset</button>
-            <button onClick={() => setCount((prev) => prev - 1)}>
-                Decrement
-            </button>
-            <button onClick={() => setCount((prev) => prev + 1)}>
-                Increment
-            </button>
-        </main>
-    );
+    return <RouterProvider router={router} />;
 }
