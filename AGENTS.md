@@ -4,6 +4,8 @@ I am building a desktop application called "Fast PDF". It is a desktop applicati
 
 Your task is to build this application using the best practices and tools available. This app has to be both friendly, intuitive and functional.
 
+Remember, it is not a web application, it is a desktop application. So I want it to look like a desktop application.
+
 I want you to keep using these tools:
 
 - Vite
