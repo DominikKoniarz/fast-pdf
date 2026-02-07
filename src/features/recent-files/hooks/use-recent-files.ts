@@ -1,5 +1,5 @@
+import type { RecentFile } from "@/features/recent-files/types";
 import { useCallback, useEffect, useState } from "react";
-import type { RecentFile } from "./types";
 
 export function useRecentFiles() {
     const [recentFiles, setRecentFiles] = useState<RecentFile[]>([]);

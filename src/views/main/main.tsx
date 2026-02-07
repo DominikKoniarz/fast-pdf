@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
-import { formatRecentTimestamp } from "@/features/recent-files/helpers";
-import { useRecentFiles } from "@/features/recent-files/use-recent-files";
+import { formatRecentTimestamp } from "@/features/recent-files/services/format-recent-timestamp";
+import { useRecentFiles } from "@/features/recent-files/hooks/use-recent-files";
 import {
     RiFilePdfLine,
     RiFolderOpenLine,
