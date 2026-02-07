@@ -8,14 +8,15 @@ interface ImportMetaEnv {
 }
 
 // Extend ImportMeta to include env property
+/* eslint-disable-next-line */
 interface ImportMeta {
     readonly env: ImportMetaEnv;
 }
 
-// Global constants defined in vite.config.mts
-declare const __APP_VERSION__: string;
-
 declare global {
+    // Global constants defined in vite.config.mts
+    const __APP_VERSION__: string;
+
     interface Window {
         fastPdf: {
             openFileDialog: () => Promise<string | null>;

@@ -85,6 +85,7 @@ export default defineConfig([
                 React: "readonly",
                 JSX: "readonly",
                 Electron: "readonly",
+                __APP_VERSION__: "readonly",
                 console: "readonly",
             },
         },
