@@ -1,13 +1,22 @@
-import electron from "vite-plugin-electron/simple";
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
-import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import tailwindcss from "@tailwindcss/vite";
+import { tanstackRouter } from "@tanstack/router-plugin/vite";
+import react from "@vitejs/plugin-react";
+import fs from "fs";
 import path from "path";
+import { fileURLToPath } from "url";
+import { defineConfig } from "vite";
+import electron from "vite-plugin-electron/simple";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const sourceAlias = {
     "@": path.resolve(__dirname, "./src"),
 };
+
+const packageJson = JSON.parse(
+    fs.readFileSync(path.resolve(__dirname, "package.json"), "utf-8"),
+);
+const appVersion = packageJson.version;
 
 export default defineConfig({
     plugins: [
@@ -46,5 +55,8 @@ export default defineConfig({
     ],
     resolve: {
         alias: sourceAlias,
+    },
+    define: {
+        __APP_VERSION__: JSON.stringify(appVersion),
     },
 });

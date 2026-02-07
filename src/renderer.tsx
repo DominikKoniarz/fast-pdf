@@ -6,5 +6,5 @@ import "./styles/globals.css";
 createRoot(document.getElementById("app")!).render(
     <StrictMode>
         <App />
-    </StrictMode>
+    </StrictMode>,
 );

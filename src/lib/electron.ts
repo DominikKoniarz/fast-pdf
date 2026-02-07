@@ -34,6 +34,6 @@ export async function findAvailablePort(): Promise<number> {
         }
     }
     throw new Error(
-        `Could not find an available port starting from ${PREFERRED_PORT}`
+        `Could not find an available port starting from ${PREFERRED_PORT}`,
     );
 }
