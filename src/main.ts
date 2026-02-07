@@ -1,13 +1,13 @@
-import type { OpenDialogOptions } from "electron";
-import path from "path";
-import { createServer, type Server } from "http";
-import { readFile } from "fs/promises";
-import { app, BrowserWindow, dialog, ipcMain } from "electron";
 import {
     addRecentFile,
     readRecentFiles,
 } from "@/features/recent-files/services/recent-files-storage";
 import { findAvailablePort } from "@/lib/electron";
+import type { OpenDialogOptions } from "electron";
+import { app, BrowserWindow, dialog, ipcMain } from "electron";
+import { readFile } from "fs/promises";
+import { createServer, type Server } from "http";
+import path from "path";
 
 process.env["ELECTRON_DISABLE_SECURITY_WARNINGS"] = "true";
 
@@ -64,7 +64,7 @@ ipcMain.handle("open-file-dialog", async () => {
 ipcMain.handle("get-recent-files", async () => readRecentFiles());
 
 ipcMain.handle("add-recent-file", async (_event, filePath: string) =>
-    addRecentFile(filePath)
+    addRecentFile(filePath),
 );
 
 async function startStaticServer(): Promise<string> {
@@ -103,7 +103,7 @@ async function startStaticServer(): Promise<string> {
             const ext = path.extname(requestedPath).toLowerCase();
             res.setHeader(
                 "Content-Type",
-                mimeTypes[ext] ?? "application/octet-stream"
+                mimeTypes[ext] ?? "application/octet-stream",
             );
             res.end(data);
         } catch {
@@ -138,7 +138,7 @@ async function createWindow() {
     win.webContents.on("did-finish-load", () => {
         win?.webContents.send(
             "main-process-message",
-            new Date().toLocaleString()
+            new Date().toLocaleString(),
         );
     });
 

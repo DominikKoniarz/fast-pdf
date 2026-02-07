@@ -1,8 +1,8 @@
-import type { RecentFile } from "../types";
+import { app } from "electron";
 import { mkdir, readFile, writeFile } from "fs/promises";
 import path from "path";
-import { app } from "electron";
 import { recentFilesSchema } from "../schema";
+import type { RecentFile } from "../types";
 
 const RECENT_FILES_FILENAME = "recent-files.json";
 
@@ -61,7 +61,7 @@ export async function addRecentFile(filePath: string): Promise<RecentFile[]> {
     const filtered = existing
         .filter((file) => path.normalize(file.path) !== normalized)
         .filter((file) =>
-            path.extname(file.path).toLowerCase().endsWith(".pdf")
+            path.extname(file.path).toLowerCase().endsWith(".pdf"),
         );
 
     const next = [createRecentFile(trimmed), ...filtered];
