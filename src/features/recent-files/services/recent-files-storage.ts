@@ -58,9 +58,11 @@ export async function addRecentFile(filePath: string): Promise<RecentFile[]> {
     const normalized = path.normalize(trimmed);
     const existing = await readRecentFiles();
 
-    const filtered = existing.filter(
-        (file) => path.normalize(file.path) !== normalized
-    );
+    const filtered = existing
+        .filter((file) => path.normalize(file.path) !== normalized)
+        .filter((file) =>
+            path.extname(file.path).toLowerCase().endsWith(".pdf")
+        );
 
     const next = [createRecentFile(trimmed), ...filtered];
 
