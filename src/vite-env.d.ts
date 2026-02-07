@@ -1,5 +1,7 @@
 /// <reference types="vite/client" />
 
+import type { RecentFile } from "@/features/recent-files/types";
+
 interface ImportMetaEnv {
     readonly VITE_SERVER_URL?: string;
     readonly VITE_APP_MODE?: "1" | "2" | "3" | "4";
@@ -17,22 +19,8 @@ declare global {
     interface Window {
         fastPdf: {
             openFileDialog: () => Promise<string | null>;
-            getRecentFiles: () => Promise<
-                Array<{
-                    path: string;
-                    name: string;
-                    openedAt: string;
-                }>
-            >;
-            addRecentFile: (
-                filePath: string
-            ) => Promise<
-                Array<{
-                    path: string;
-                    name: string;
-                    openedAt: string;
-                }>
-            >;
+            getRecentFiles: () => Promise<RecentFile[]>;
+            addRecentFile: (filePath: string) => Promise<RecentFile[]>;
         };
     }
 }
