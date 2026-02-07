@@ -1,23 +1,16 @@
+import type { OpenDialogOptions } from "electron";
 import path from "path";
 import { createServer, type Server } from "http";
-import { mkdir, readFile, writeFile } from "fs/promises";
+import { readFile } from "fs/promises";
 import { app, BrowserWindow, dialog, ipcMain } from "electron";
-import type { OpenDialogOptions } from "electron";
-import { z } from "zod";
-import { findAvailablePort } from "./main-helpers";
-
-const PREFERRED_PORT = 4000;
+import {
+    addRecentFile,
+    readRecentFiles,
+} from "@/features/recent-files/services/recent-files-storage";
+import { findAvailablePort } from "@/lib/electron";
 
 process.env["ELECTRON_DISABLE_SECURITY_WARNINGS"] = "true";
-// The built directory structure
-//
-// ├─┬ dist
-// │ ├─┬ electron
-// │ │ ├── main.js
-// │ │ └── preload.js
-// │ ├── index.html
-// │ ├── ...other-static-files-from-public
-// │
+
 process.env.DIST = path.join(__dirname, "../dist");
 process.env.VITE_PUBLIC = app.isPackaged
     ? process.env.DIST
@@ -51,84 +44,11 @@ const mimeTypes: Record<string, string> = {
     ".otf": "font/otf",
 };
 
-const RECENT_FILES_FILENAME = "recent-files.json";
-
-const recentFileSchema = z.object({
-    path: z.string(),
-    name: z.string(),
-    openedAt: z.string(),
-});
-
-const recentFilesSchema = z.array(recentFileSchema);
-
-type RecentFileRecord = z.infer<typeof recentFileSchema>;
-
-function getRecentFilesPath() {
-    return path.join(app.getPath("userData"), RECENT_FILES_FILENAME);
-}
-
-async function readRecentFiles(): Promise<RecentFileRecord[]> {
-    const filePath = getRecentFilesPath();
-
-    try {
-        const raw = await readFile(filePath, "utf-8");
-        const parsed = JSON.parse(raw);
-        const parsedResult = recentFilesSchema.safeParse(parsed);
-        if (!parsedResult.success) {
-            return [];
-        }
-
-        return parsedResult.data;
-    } catch (error) {
-        if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-            return [];
-        }
-
-        throw error;
-    }
-}
-
-async function writeRecentFiles(files: RecentFileRecord[]): Promise<void> {
-    const filePath = getRecentFilesPath();
-    await mkdir(path.dirname(filePath), { recursive: true });
-    await writeFile(filePath, JSON.stringify(files, null, 2), "utf-8");
-}
-
-function createRecentFile(filePath: string): RecentFileRecord {
-    return {
-        path: filePath,
-        name: path.basename(filePath),
-        openedAt: new Date().toISOString(),
-    };
-}
-
-async function addRecentFile(filePath: string): Promise<RecentFileRecord[]> {
-    const trimmed = filePath.trim();
-    if (!trimmed) {
-        return readRecentFiles();
-    }
-
-    const normalized = path.normalize(trimmed);
-    const existing = await readRecentFiles();
-
-    const filtered = existing.filter(
-        (file) => path.normalize(file.path) !== normalized
-    );
-
-    const next = [createRecentFile(trimmed), ...filtered];
-
-    await writeRecentFiles(next);
-    return next;
-}
-
 ipcMain.handle("open-file-dialog", async () => {
     const browserWindow = BrowserWindow.getFocusedWindow() ?? win ?? null;
     const options: OpenDialogOptions = {
         properties: ["openFile"],
-        filters: [
-            { name: "PDF Files", extensions: ["pdf"] },
-            { name: "All Files", extensions: ["*"] },
-        ],
+        filters: [{ name: "PDF Files", extensions: ["pdf"] }],
     };
     const result = browserWindow
         ? await dialog.showOpenDialog(browserWindow, options)
@@ -155,7 +75,7 @@ async function startStaticServer(): Promise<string> {
         }
     }
 
-    const port = await findAvailablePort(PREFERRED_PORT);
+    const port = await findAvailablePort();
     const root = process.env.DIST!;
 
     staticServer = createServer(async (req, res) => {
