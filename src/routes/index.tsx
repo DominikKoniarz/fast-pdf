@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
     RiFilePdfLine,
@@ -18,34 +18,69 @@ export const Route = createFileRoute("/")({
     component: MainPage,
 });
 
-// Placeholder — replaced by IPC in Phase 4
-const MOCK_RECENT_FILES: RecentFile[] = [
-    {
-        name: "report-2026.pdf",
-        path: "/Users/user/Documents/report-2026.pdf",
-        openedAt: "2h ago",
-    },
-    {
-        name: "invoice_march.pdf",
-        path: "/Users/user/Downloads/invoice_march.pdf",
-        openedAt: "Yesterday",
-    },
-    {
-        name: "design-spec.pdf",
-        path: "/Users/user/Projects/design-spec.pdf",
-        openedAt: "3 days ago",
-    },
-];
+function formatRecentTimestamp(value: string) {
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) {
+        return value;
+    }
+
+    const diffMs = Date.now() - parsed.getTime();
+    const diffMinutes = Math.max(0, Math.floor(diffMs / 60000));
+    if (diffMinutes < 1) {
+        return "Just now";
+    }
+    if (diffMinutes < 60) {
+        return `${diffMinutes}m ago`;
+    }
+
+    const diffHours = Math.floor(diffMinutes / 60);
+    if (diffHours < 24) {
+        return `${diffHours}h ago`;
+    }
+
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffDays < 7) {
+        return `${diffDays}d ago`;
+    }
+
+    return parsed.toLocaleDateString();
+}
 
 function MainPage() {
-    const [recentFiles] = useState<RecentFile[]>(MOCK_RECENT_FILES);
+    const [recentFiles, setRecentFiles] = useState<RecentFile[]>([]);
 
-    const handleOpenFile = () => {
-        // Phase 4: connect to IPC open-file-dialog
+    useEffect(() => {
+        let isActive = true;
+
+        const loadRecentFiles = async () => {
+            const files = await window.fastPdf.getRecentFiles();
+            if (isActive) {
+                setRecentFiles(files);
+            }
+        };
+
+        loadRecentFiles();
+
+        return () => {
+            isActive = false;
+        };
+    }, []);
+
+    const handleOpenFile = async () => {
+        const selectedPath = await window.fastPdf.openFileDialog();
+        if (!selectedPath) {
+            return;
+        }
+
+        console.log(`[Fast PDF] Open file: ${selectedPath}`);
+        const nextFiles = await window.fastPdf.addRecentFile(selectedPath);
+        setRecentFiles(nextFiles);
     };
 
-    const handleOpenRecent = (_file: RecentFile) => {
-        // Phase 4: connect to IPC
+    const handleOpenRecent = async (file: RecentFile) => {
+        console.log(`[Fast PDF] Open recent: ${file.path}`);
+        const nextFiles = await window.fastPdf.addRecentFile(file.path);
+        setRecentFiles(nextFiles);
     };
 
     return (
@@ -81,40 +116,52 @@ function MainPage() {
                 </div>
 
                 {/* Recent Files */}
-                {recentFiles.length > 0 && (
-                    <div className="w-80 animate-in fade-in slide-in-from-bottom-2 duration-500 delay-200">
-                        <div className="mb-1.5 flex items-center gap-1.5 px-1">
-                            <RiTimeLine className="size-3 text-muted-foreground/50" />
-                            <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground/50">
-                                Recent
-                            </span>
-                        </div>
-                        <div className="flex flex-col rounded-lg border border-border/40 bg-card/30 p-1">
-                            {recentFiles.map((file) => (
-                                <Button
-                                    key={file.path}
-                                    variant="ghost"
-                                    onClick={() => handleOpenRecent(file)}
-                                    className="group h-auto w-full justify-start gap-3 rounded-md px-2.5 py-2 text-left"
-                                >
-                                    <RiFilePdfLine className="size-3.5 shrink-0 text-muted-foreground/40 transition-colors group-hover/button:text-foreground/60" />
-                                    <div className="flex min-w-0 flex-1 flex-col gap-px">
-                                        <span className="truncate text-xs font-medium">
-                                            {file.name}
+                {/* {recentFiles.length > 0 && ( */}
+                <div className="w-80 animate-in fade-in slide-in-from-bottom-2 duration-500 delay-200">
+                    <div className="mb-1.5 flex items-center gap-1.5 px-1">
+                        <RiTimeLine className="size-3 text-muted-foreground/50" />
+                        <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground/50">
+                            Recent
+                        </span>
+                    </div>
+                    <div className="flex flex-col rounded-lg border border-border/40 bg-card/30 p-1 max-h-50 justify-center min-h-50">
+                        <div className="flex h-full flex-col gap-1 overflow-y-auto pr-1">
+                            {recentFiles.length > 0 ? (
+                                recentFiles.map((file) => (
+                                    <Button
+                                        key={file.path}
+                                        variant="ghost"
+                                        onClick={() => handleOpenRecent(file)}
+                                        className="group h-auto w-full justify-start gap-3 rounded-md px-2.5 py-2 text-left"
+                                    >
+                                        <RiFilePdfLine className="size-3.5 shrink-0 text-muted-foreground/40 transition-colors group-hover/button:text-foreground/60" />
+                                        <div className="flex min-w-0 flex-1 flex-col gap-px">
+                                            <span className="truncate text-xs font-medium">
+                                                {file.name}
+                                            </span>
+                                            <span className="truncate text-[10px] leading-tight text-muted-foreground/50">
+                                                {file.path}
+                                            </span>
+                                        </div>
+                                        <span className="shrink-0 text-[10px] text-muted-foreground/30">
+                                            {formatRecentTimestamp(
+                                                file.openedAt
+                                            )}
                                         </span>
-                                        <span className="truncate text-[10px] leading-tight text-muted-foreground/50">
-                                            {file.path}
-                                        </span>
-                                    </div>
-                                    <span className="shrink-0 text-[10px] text-muted-foreground/30">
-                                        {file.openedAt}
-                                    </span>
-                                    <RiArrowRightSLine className="size-3 shrink-0 text-muted-foreground/20 opacity-0 transition-opacity group-hover/button:opacity-100" />
-                                </Button>
-                            ))}
+                                        <RiArrowRightSLine className="size-3 shrink-0 text-muted-foreground/20 opacity-0 transition-opacity group-hover/button:opacity-100" />
+                                    </Button>
+                                ))
+                            ) : (
+                                <div className="flex h-full items-center justify-center">
+                                    <p className="text-sm text-muted-foreground">
+                                        {/* No recent files */}
+                                    </p>
+                                </div>
+                            )}
                         </div>
                     </div>
-                )}
+                </div>
+                {/* )} */}
             </div>
         </div>
     );

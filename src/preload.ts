@@ -25,6 +25,13 @@ contextBridge.exposeInMainWorld("ipcRenderer", {
     // ...
 });
 
+contextBridge.exposeInMainWorld("fastPdf", {
+    openFileDialog: () => ipcRenderer.invoke("open-file-dialog"),
+    getRecentFiles: () => ipcRenderer.invoke("get-recent-files"),
+    addRecentFile: (filePath: string) =>
+        ipcRenderer.invoke("add-recent-file", filePath),
+});
+
 // --------- Preload scripts loading ---------
 function domReady(
     condition: DocumentReadyState[] = ["complete", "interactive"]
