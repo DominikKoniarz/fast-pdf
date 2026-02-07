@@ -1,21 +1,16 @@
+import type { OpenDialogOptions } from "electron";
 import path from "path";
 import { createServer, type Server } from "http";
 import { readFile } from "fs/promises";
-import { app, BrowserWindow } from "electron";
-import { findAvailablePort } from "./main-helpers";
-
-const PREFERRED_PORT = 4000;
+import { app, BrowserWindow, dialog, ipcMain } from "electron";
+import {
+    addRecentFile,
+    readRecentFiles,
+} from "@/features/recent-files/services/recent-files-storage";
+import { findAvailablePort } from "@/lib/electron";
 
 process.env["ELECTRON_DISABLE_SECURITY_WARNINGS"] = "true";
-// The built directory structure
-//
-// ├─┬ dist
-// │ ├─┬ electron
-// │ │ ├── main.js
-// │ │ └── preload.js
-// │ ├── index.html
-// │ ├── ...other-static-files-from-public
-// │
+
 process.env.DIST = path.join(__dirname, "../dist");
 process.env.VITE_PUBLIC = app.isPackaged
     ? process.env.DIST
@@ -49,6 +44,29 @@ const mimeTypes: Record<string, string> = {
     ".otf": "font/otf",
 };
 
+ipcMain.handle("open-file-dialog", async () => {
+    const browserWindow = BrowserWindow.getFocusedWindow() ?? win ?? null;
+    const options: OpenDialogOptions = {
+        properties: ["openFile"],
+        filters: [{ name: "PDF Files", extensions: ["pdf"] }],
+    };
+    const result = browserWindow
+        ? await dialog.showOpenDialog(browserWindow, options)
+        : await dialog.showOpenDialog(options);
+
+    if (result.canceled || result.filePaths.length === 0) {
+        return null;
+    }
+
+    return result.filePaths[0];
+});
+
+ipcMain.handle("get-recent-files", async () => readRecentFiles());
+
+ipcMain.handle("add-recent-file", async (_event, filePath: string) =>
+    addRecentFile(filePath)
+);
+
 async function startStaticServer(): Promise<string> {
     if (staticServer) {
         const address = staticServer.address();
@@ -57,7 +75,7 @@ async function startStaticServer(): Promise<string> {
         }
     }
 
-    const port = await findAvailablePort(PREFERRED_PORT);
+    const port = await findAvailablePort();
     const root = process.env.DIST!;
 
     staticServer = createServer(async (req, res) => {

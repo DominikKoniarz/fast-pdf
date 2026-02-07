@@ -1,5 +1,7 @@
 import net from "net";
 
+const PREFERRED_PORT = 4000;
+
 /**
  * Check if a port is available
  */
@@ -24,16 +26,14 @@ export function isPortAvailable(port: number): Promise<boolean> {
  * Find an available port starting from the preferred port
  * Tries up to 100 ports in sequence
  */
-export async function findAvailablePort(
-    preferredPort: number
-): Promise<number> {
+export async function findAvailablePort(): Promise<number> {
     for (let offset = 0; offset < 100; offset++) {
-        const port = preferredPort + offset;
+        const port = PREFERRED_PORT + offset;
         if (await isPortAvailable(port)) {
             return port;
         }
     }
     throw new Error(
-        `Could not find an available port starting from ${preferredPort}`
+        `Could not find an available port starting from ${PREFERRED_PORT}`
     );
 }
