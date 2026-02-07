@@ -29,7 +29,7 @@ export default defineConfig({
             target: "react",
             autoCodeSplitting: true,
             routesDirectory: "./src/routes",
-            generatedRouteTree: "./src/routeTree.gen.ts",
+            generatedRouteTree: "./src/routes/routeTree.gen.ts",
         }),
         tailwindcss(),
         react(),
