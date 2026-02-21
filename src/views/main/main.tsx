@@ -44,7 +44,6 @@ export function MainView() {
                 </div>
 
                 {/* Recent Files */}
-                {/* {recentFiles.length > 0 && ( */}
                 <div className="animate-in fade-in slide-in-from-bottom-2 w-80 delay-200 duration-500">
                     <div className="mb-1.5 flex items-center gap-1.5 px-1">
                         <RiTimeLine className="text-muted-foreground/50 size-3" />
@@ -82,14 +81,13 @@ export function MainView() {
                             ) : (
                                 <div className="flex h-full items-center justify-center">
                                     <p className="text-muted-foreground text-sm">
-                                        {/* No recent files */}
+                                        No recent files
                                     </p>
                                 </div>
                             )}
                         </div>
                     </div>
                 </div>
-                {/* )} */}
             </div>
         </div>
     );
