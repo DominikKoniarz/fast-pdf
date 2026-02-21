@@ -1,6 +1,16 @@
 /// <reference types="vite/client" />
 
 import type { RecentFile } from "@/features/recent-files/types";
+import type {
+    ClosePdfSessionRequest,
+    ClosePdfSessionResult,
+    GetPdfSessionRequest,
+    GetPdfSessionResult,
+    GetPdfPageRequest,
+    GetPdfPageResult,
+    OpenPdfSessionRequest,
+    OpenPdfSessionResult,
+} from "@/features/pdf-page/types";
 
 interface ImportMetaEnv {
     readonly VITE_SERVER_URL?: string;
@@ -22,6 +32,16 @@ declare global {
             openFileDialog: () => Promise<string | null>;
             getRecentFiles: () => Promise<RecentFile[]>;
             addRecentFile: (filePath: string) => Promise<RecentFile[]>;
+            openPdfSession: (
+                payload: OpenPdfSessionRequest,
+            ) => Promise<OpenPdfSessionResult>;
+            getPdfSession: (
+                payload: GetPdfSessionRequest,
+            ) => Promise<GetPdfSessionResult>;
+            getPdfPage: (payload: GetPdfPageRequest) => Promise<GetPdfPageResult>;
+            closePdfSession: (
+                payload: ClosePdfSessionRequest,
+            ) => Promise<ClosePdfSessionResult>;
         };
     }
 }

@@ -16,7 +16,8 @@ I want you to keep using these tools:
 - Typescript
 - Shadcn/UI
 - Tanstack Router
-- Zod v4 (e.g. `import { z } from "zod/mini"`)
+- Tanstack Query
+- Zod v4 mini (e.g. `import { z } from "zod/mini"`)
 
 ## Files and Directories Structure
 

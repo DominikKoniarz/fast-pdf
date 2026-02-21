@@ -1,8 +1,31 @@
 import {
+    closePdfSessionRequestSchema,
+    closePdfSessionResultSchema,
+    getPdfSessionRequestSchema,
+    getPdfSessionResultSchema,
+    getPdfPageRequestSchema,
+    getPdfPageResultSchema,
+    openPdfSessionRequestSchema,
+    openPdfSessionResultSchema,
+} from "@/features/pdf-page/schema";
+import {
+    loadPdfFromFile,
+    readPdfPageContent,
+    toPdfIpcErrorResult,
+} from "@/features/pdf-page/services/pdf-page-reader";
+import {
+    clearPdfSessions,
+    closePdfSession as closeStoredPdfSession,
+    createPdfSession,
+    getPdfSession,
+    touchPdfSession,
+} from "@/features/pdf-page/services/pdf-session-store";
+import {
     addRecentFile,
     readRecentFiles,
 } from "@/features/recent-files/services/recent-files-storage";
 import { findAvailablePort } from "@/lib/electron";
+import { ipcChannels } from "@/lib/ipc-channels";
 import type { OpenDialogOptions } from "electron";
 import { app, BrowserWindow, dialog, ipcMain } from "electron";
 import { readFile } from "fs/promises";
@@ -44,7 +67,15 @@ const mimeTypes: Record<string, string> = {
     ".otf": "font/otf",
 };
 
-ipcMain.handle("open-file-dialog", async () => {
+function getErrorMessage(error: unknown, fallback: string): string {
+    if (error instanceof Error && error.message) {
+        return error.message;
+    }
+
+    return fallback;
+}
+
+ipcMain.handle(ipcChannels.openFileDialog, async () => {
     const browserWindow = BrowserWindow.getFocusedWindow() ?? win ?? null;
     const options: OpenDialogOptions = {
         properties: ["openFile"],
@@ -61,10 +92,124 @@ ipcMain.handle("open-file-dialog", async () => {
     return result.filePaths[0];
 });
 
-ipcMain.handle("get-recent-files", async () => readRecentFiles());
+ipcMain.handle(ipcChannels.getRecentFiles, async () => readRecentFiles());
 
-ipcMain.handle("add-recent-file", async (_event, filePath: string) =>
+ipcMain.handle(ipcChannels.addRecentFile, async (_event, filePath: string) =>
     addRecentFile(filePath),
+);
+
+ipcMain.handle(ipcChannels.openPdfSession, async (_event, payload: unknown) => {
+    const parsedRequest = openPdfSessionRequestSchema.safeParse(payload);
+    if (!parsedRequest.success) {
+        return toPdfIpcErrorResult(
+            "INVALID_OPEN_PDF_SESSION_REQUEST",
+            "Invalid openPdfSession request payload",
+        );
+    }
+
+    try {
+        const loaded = await loadPdfFromFile(parsedRequest.data.filePath);
+        const sessionId = createPdfSession({
+            document: loaded.document,
+            originalBytes: loaded.originalBytes,
+            pdf: loaded.pdf,
+        });
+
+        return openPdfSessionResultSchema.parse({
+            ok: true,
+            sessionId,
+            document: loaded.document,
+        });
+    } catch (error) {
+        return toPdfIpcErrorResult(
+            "OPEN_PDF_SESSION_FAILED",
+            getErrorMessage(error, "Failed to open PDF session"),
+        );
+    }
+});
+
+ipcMain.handle(ipcChannels.getPdfSession, async (_event, payload: unknown) => {
+    const parsedRequest = getPdfSessionRequestSchema.safeParse(payload);
+    if (!parsedRequest.success) {
+        return toPdfIpcErrorResult(
+            "INVALID_GET_PDF_SESSION_REQUEST",
+            "Invalid getPdfSession request payload",
+        );
+    }
+
+    const session = getPdfSession(parsedRequest.data.sessionId);
+    if (!session) {
+        return toPdfIpcErrorResult(
+            "PDF_SESSION_NOT_FOUND",
+            "PDF session not found",
+        );
+    }
+
+    touchPdfSession(parsedRequest.data.sessionId);
+
+    return getPdfSessionResultSchema.parse({
+        ok: true,
+        sessionId: parsedRequest.data.sessionId,
+        document: session.document,
+    });
+});
+
+ipcMain.handle(ipcChannels.getPdfPage, async (_event, payload: unknown) => {
+    const parsedRequest = getPdfPageRequestSchema.safeParse(payload);
+    if (!parsedRequest.success) {
+        return toPdfIpcErrorResult(
+            "INVALID_GET_PDF_PAGE_REQUEST",
+            "Invalid getPdfPage request payload",
+        );
+    }
+
+    const session = getPdfSession(parsedRequest.data.sessionId);
+    if (!session) {
+        return toPdfIpcErrorResult(
+            "PDF_SESSION_NOT_FOUND",
+            "PDF session not found",
+        );
+    }
+
+    try {
+        const page = readPdfPageContent(session.pdf, parsedRequest.data.pageIndex);
+        touchPdfSession(parsedRequest.data.sessionId);
+
+        return getPdfPageResultSchema.parse({
+            ok: true,
+            page,
+        });
+    } catch (error) {
+        return toPdfIpcErrorResult(
+            "GET_PDF_PAGE_FAILED",
+            getErrorMessage(error, "Failed to read PDF page"),
+        );
+    }
+});
+
+ipcMain.handle(
+    ipcChannels.closePdfSession,
+    async (_event, payload: unknown) => {
+        const parsedRequest = closePdfSessionRequestSchema.safeParse(payload);
+        if (!parsedRequest.success) {
+            return toPdfIpcErrorResult(
+                "INVALID_CLOSE_PDF_SESSION_REQUEST",
+                "Invalid closePdfSession request payload",
+            );
+        }
+
+        const closed = closeStoredPdfSession(parsedRequest.data.sessionId);
+        if (!closed) {
+            return toPdfIpcErrorResult(
+                "PDF_SESSION_NOT_FOUND",
+                "PDF session not found",
+            );
+        }
+
+        return closePdfSessionResultSchema.parse({
+            ok: true,
+        });
+    },
 );
 
 async function startStaticServer(): Promise<string> {
@@ -173,6 +318,7 @@ app.on("window-all-closed", () => {
 });
 
 app.on("before-quit", () => {
+    clearPdfSessions();
     staticServer?.close();
     staticServer = null;
 });

@@ -11,28 +11,66 @@ export function useRecentFiles() {
         queryFn: () => window.fastPdf.getRecentFiles(),
     });
 
-    const { mutate: openFile } = useMutation({
+    const openFileMutation = useMutation({
         mutationFn: async () => {
             const selectedPath = await window.fastPdf.openFileDialog();
 
-            if (!selectedPath) return null;
+            if (!selectedPath) {
+                return null;
+            }
 
-            return window.fastPdf.addRecentFile(selectedPath);
+            const openSessionResult = await window.fastPdf.openPdfSession({
+                filePath: selectedPath,
+            });
+            if (!openSessionResult.ok) {
+                throw new Error(openSessionResult.error.message);
+            }
+
+            const updatedRecentFiles = await window.fastPdf.addRecentFile(selectedPath);
+
+            return {
+                sessionId: openSessionResult.sessionId,
+                updatedRecentFiles,
+            };
         },
         onSuccess: (data) => {
             if (data) {
-                queryClient.setQueryData(RECENT_FILES_QUERY_KEY, data);
+                queryClient.setQueryData(
+                    RECENT_FILES_QUERY_KEY,
+                    data.updatedRecentFiles,
+                );
             }
         },
     });
 
-    const { mutate: openRecent } = useMutation({
-        mutationFn: (file: RecentFile) =>
-            window.fastPdf.addRecentFile(file.path),
+    const openRecentMutation = useMutation({
+        mutationFn: async (file: RecentFile) => {
+            const openSessionResult = await window.fastPdf.openPdfSession({
+                filePath: file.path,
+            });
+            if (!openSessionResult.ok) {
+                throw new Error(openSessionResult.error.message);
+            }
+
+            return {
+                sessionId: openSessionResult.sessionId,
+                updatedRecentFiles: await window.fastPdf.addRecentFile(file.path),
+            };
+        },
         onSuccess: (data) => {
-            queryClient.setQueryData(RECENT_FILES_QUERY_KEY, data);
+            queryClient.setQueryData(RECENT_FILES_QUERY_KEY, data.updatedRecentFiles);
         },
     });
+
+    const openFile = async () => {
+        const result = await openFileMutation.mutateAsync();
+        return result?.sessionId ?? null;
+    };
+
+    const openRecent = async (file: RecentFile) => {
+        const result = await openRecentMutation.mutateAsync(file);
+        return result.sessionId;
+    };
 
     return {
         recentFiles,

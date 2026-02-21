@@ -39,6 +39,7 @@
     "dependencies": {
         "@base-ui/react": "1.1.0",
         "@fontsource-variable/jetbrains-mono": "5.2.8",
+        "@libpdf/core": "0.2.9",
         "@remixicon/react": "4.9.0",
         "@tanstack/react-query": "5.90.21",
         "@tanstack/react-router": "1.158.1",

@@ -5,7 +5,7 @@ import { RiArrowRightSLine, RiFilePdfLine, RiTimeLine } from "@remixicon/react";
 
 type RecentFilesListProps = {
     recentFiles: RecentFile[];
-    onOpenRecent: (file: RecentFile) => void;
+    onOpenRecent: (file: RecentFile) => Promise<void>;
 };
 
 export function RecentFilesList({
@@ -27,7 +27,9 @@ export function RecentFilesList({
                             <Button
                                 key={file.path}
                                 variant="ghost"
-                                onClick={() => onOpenRecent(file)}
+                                onClick={() => {
+                                    void onOpenRecent(file);
+                                }}
                                 className="group h-auto w-full justify-start gap-3 rounded-md px-2.5 py-2 text-left"
                             >
                                 <RiFilePdfLine className="text-muted-foreground/40 group-hover/button:text-foreground/60 size-3.5 shrink-0 transition-colors" />

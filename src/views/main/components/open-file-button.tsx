@@ -2,13 +2,18 @@ import { Button } from "@/components/ui/button";
 import { RiFolderOpenLine } from "@remixicon/react";
 
 type OpenFileButtonProps = {
-    onOpenFile: () => void;
+    onOpenFile: () => Promise<void>;
 };
 
 export function OpenFileButton({ onOpenFile }: OpenFileButtonProps) {
     return (
         <div className="animate-in fade-in slide-in-from-bottom-2 flex flex-col items-center gap-1.5 delay-100 duration-500">
-            <Button size="lg" onClick={onOpenFile}>
+            <Button
+                size="lg"
+                onClick={() => {
+                    void onOpenFile();
+                }}
+            >
                 <RiFolderOpenLine data-icon="inline-start" />
                 Open File
             </Button>
