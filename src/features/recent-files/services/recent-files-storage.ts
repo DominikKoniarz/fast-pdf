@@ -5,6 +5,7 @@ import { recentFilesSchema } from "../schema";
 import type { RecentFile } from "../types";
 
 const RECENT_FILES_FILENAME = "recent-files.json";
+const MAX_RECENT_FILES = 20;
 
 function getRecentFilesPath() {
     return path.join(app.getPath("userData"), RECENT_FILES_FILENAME);
@@ -64,7 +65,10 @@ export async function addRecentFile(filePath: string): Promise<RecentFile[]> {
             path.extname(file.path).toLowerCase().endsWith(".pdf"),
         );
 
-    const next = [createRecentFile(trimmed), ...filtered];
+    const next = [createRecentFile(trimmed), ...filtered].slice(
+        0,
+        MAX_RECENT_FILES,
+    );
 
     await writeRecentFiles(next);
 

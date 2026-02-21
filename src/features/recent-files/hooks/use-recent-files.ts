@@ -1,52 +1,41 @@
 import type { RecentFile } from "@/features/recent-files/types";
-import { useCallback, useEffect, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+
+const RECENT_FILES_QUERY_KEY = ["recent-files"] as const;
 
 export function useRecentFiles() {
-    const [recentFiles, setRecentFiles] = useState<RecentFile[]>([]);
+    const queryClient = useQueryClient();
 
-    const loadRecentFiles = useCallback(async () => {
-        const files = await window.fastPdf.getRecentFiles();
-        setRecentFiles(files);
-    }, []);
+    const { data: recentFiles = [] } = useQuery({
+        queryKey: RECENT_FILES_QUERY_KEY,
+        queryFn: () => window.fastPdf.getRecentFiles(),
+    });
 
-    useEffect(() => {
-        let isActive = true;
+    const { mutate: openFile } = useMutation({
+        mutationFn: async () => {
+            const selectedPath = await window.fastPdf.openFileDialog();
 
-        const load = async () => {
-            const files = await window.fastPdf.getRecentFiles();
-            if (isActive) {
-                setRecentFiles(files);
+            if (!selectedPath) return null;
+
+            return window.fastPdf.addRecentFile(selectedPath);
+        },
+        onSuccess: (data) => {
+            if (data) {
+                queryClient.setQueryData(RECENT_FILES_QUERY_KEY, data);
             }
-        };
+        },
+    });
 
-        load();
-
-        return () => {
-            isActive = false;
-        };
-    }, []);
-
-    const openFile = useCallback(async () => {
-        const selectedPath = await window.fastPdf.openFileDialog();
-
-        if (!selectedPath) {
-            return;
-        }
-
-        const nextFiles = await window.fastPdf.addRecentFile(selectedPath);
-
-        setRecentFiles(nextFiles);
-    }, []);
-
-    const openRecent = useCallback(async (file: RecentFile) => {
-        const nextFiles = await window.fastPdf.addRecentFile(file.path);
-
-        setRecentFiles(nextFiles);
-    }, []);
+    const { mutate: openRecent } = useMutation({
+        mutationFn: (file: RecentFile) =>
+            window.fastPdf.addRecentFile(file.path),
+        onSuccess: (data) => {
+            queryClient.setQueryData(RECENT_FILES_QUERY_KEY, data);
+        },
+    });
 
     return {
         recentFiles,
-        loadRecentFiles,
         openFile,
         openRecent,
     };

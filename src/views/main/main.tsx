@@ -34,7 +34,7 @@ export function MainView() {
 
                 {/* Open File */}
                 <div className="animate-in fade-in slide-in-from-bottom-2 flex flex-col items-center gap-1.5 delay-100 duration-500">
-                    <Button size="lg" onClick={openFile}>
+                    <Button size="lg" onClick={() => openFile()}>
                         <RiFolderOpenLine data-icon="inline-start" />
                         Open File
                     </Button>
